@@ -38,9 +38,9 @@ if __name__ == '__main__':
         x3.append(data[d]["flow"])
         previtem = data[d]["temp"]
 
-    # 1441602000000 1441177200000 1441177800000
-    # find the best kernel bandwidth using leave-one-out cross validation
-    # use NW regression to compute coefficients of the parametric part of the model
+    # choose the best kernel bandwidth using least square and leave-one-out cross validation
+    # use Nadaraya-Watson kernel regression to compute conditional expectations
+    # of each dependent/independent variable given the time index ()
     model1 = nparam.KernelReg(endog=[x1],
                              exog=[t], reg_type='lc',
                              var_type='u', bw='cv_ls')
@@ -74,12 +74,13 @@ if __name__ == '__main__':
     mean_x0.extend(mean_y[:-1])
     mean_x0 = np.array(mean_x0)
 
-    # solve linear regression using OLS y-meany = b_0*(x0-mean_x0)+b_1*(x1-mean_x1)+b_2*(x2-mean_x2)+b_3*(x3-mean_x3)+eps
+    # apply the least squares method to estimate coefficients, b_i:
+    # y-mean_y = b_0*(x0-mean_x0)+b_1*(x1-mean_x1)+b_2*(x2-mean_x2)+b_3*(x3-mean_x3)+eps
     X = np.vstack([x0-mean_x0, x1-mean_x1, x2-mean_x2, x3-mean_x3]).T
     beta_hat = np.linalg.lstsq(X,y-mean_y)[0]
     print beta_hat
 
-    # use NW regression to estimate the nonparametric part
+    # use Nadaraya-Watson kernel regression to estimate the nonparametric terms
     bx = np.dot(np.vstack([x0, x1, x2, x3]).T,beta_hat)
     newy = y - bx
 
@@ -90,27 +91,9 @@ if __name__ == '__main__':
     bw_final= model_final.bw
     mean_final, mtx_final = model_final.fit()
 
-    # print sm_mean
-
-    # model = SemiLinear(endog=[y], exog=[X], exog_nonparametric=[t], var_type='c', k_linear=3)
-    # print(model.bw)
-    # print(model.b)
-    #
-    # # use NW regression to estimate the nonparametric part
-    # mean, mfx = model.fit()
-
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     #ax.plot(t,x3,'o', alpha=0.5)
     #ax.plot(t[:144],mean_x3[:144],lw=2)
     ax.plot(t[:144],mean_final[:144],lw=2)
     plt.show()
-
-
-    # fig, ax1 = plt.subplots()
-    # ax1.plot(t,y,'r',label='temp')
-    # ax2 = ax1.twinx()
-    # ax2.plot(t,x1,'g',label='reheat')
-    # ax2.plot(t,x2,'b',label='outtemp')
-    # plt.show()
-    # plt.legend()
